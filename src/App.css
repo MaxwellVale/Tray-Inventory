@@ -208,6 +208,19 @@ button,
   font-weight: 650;
 }
 
+.secondary-button {
+  width: 100%;
+  margin-top: 12px;
+  border: none;
+  border-radius: 12px;
+  background: #e5e7eb;
+  color: #111827;
+  cursor: pointer;
+  font: inherit;
+  font-weight: 800;
+  padding: 13px 16px;
+}
+
 @media (max-width: 640px) {
   .page {
     padding: 14px;
@@ -230,4 +243,48 @@ button,
   .meta-grid {
     grid-template-columns: 1fr;
   }
+}
+
+.quantity-stack {
+  display: grid;
+  gap: 8px;
+  justify-items: end;
+}
+
+.pending-pill {
+  border-radius: 999px;
+  background: #ecfdf5;
+  color: #065f46;
+  padding: 8px 12px;
+  font-size: 0.9rem;
+  font-weight: 800;
+  white-space: nowrap;
+}
+
+.submit-panel {
+  margin-top: 24px;
+  padding: 18px;
+  border: 1px solid #d1d5db;
+  border-radius: 16px;
+  background: #f9fafb;
+}
+
+.submit-panel h2 {
+  margin-top: 0;
+  font-size: 1.1rem;
+}
+
+.submit-panel ul {
+  margin: 12px 0;
+  padding-left: 20px;
+}
+
+.submit-panel li {
+  margin: 6px 0;
+  font-weight: 700;
+}
+
+button:disabled {
+  cursor: not-allowed;
+  opacity: 0.6;
 }

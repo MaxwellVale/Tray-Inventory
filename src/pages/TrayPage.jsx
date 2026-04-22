@@ -1,56 +1,146 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Link, useParams } from "react-router-dom";
-import { trays, trayContents } from "../data/inventory";
+import {
+  getTray,
+  getTrayContents,
+  submitInventoryChanges,
+} from "../api/inventory";
 
 export default function TrayPage() {
   const { trayId } = useParams();
 
-  const tray = trays.find((tray) => tray.trayId === trayId);
-
-  const startingContents = useMemo(() => {
-    return trayContents.filter((item) => item.trayId === trayId);
-  }, [trayId]);
-
-  const [contents, setContents] = useState(startingContents);
+  const [tray, setTray] = useState(null);
+  const [contents, setContents] = useState([]);
+  const [pendingChanges, setPendingChanges] = useState({});
   const [user, setUser] = useState("");
   const [changeAmount, setChangeAmount] = useState(1);
-  const [status, setStatus] = useState("Ready");
+  const [status, setStatus] = useState("Loading...");
+  const [isSaving, setIsSaving] = useState(false);
+
+  async function loadTrayData() {
+    try {
+      setStatus("Loading...");
+      const [trayData, contentsData] = await Promise.all([
+        getTray(trayId),
+        getTrayContents(trayId),
+      ]);
+
+      setTray(trayData);
+      setContents(contentsData);
+      setPendingChanges({});
+      setStatus("Ready");
+    } catch (error) {
+      setStatus(error.message || "Could not load tray.");
+    }
+  }
+
+  useEffect(() => {
+    loadTrayData();
+  }, [trayId]);
+
+  const stagedChanges = useMemo(() => {
+    return contents
+      .map((item) => {
+        const pendingChange = pendingChanges[item.id] || 0;
+
+        return {
+          contentId: item.id,
+          trayId: item.tray_id,
+          sku: item.sku,
+          currentQuantity: item.quantity,
+          changeAmount: pendingChange,
+          nextQuantity: Math.max(0, item.quantity + pendingChange),
+        };
+      })
+      .filter((change) => change.changeAmount !== 0);
+  }, [contents, pendingChanges]);
+
+  function stageChange(item, delta) {
+    setPendingChanges((currentChanges) => {
+      const currentPendingChange = currentChanges[item.id] || 0;
+      const proposedPendingChange = currentPendingChange + delta;
+      const proposedNextQuantity = item.quantity + proposedPendingChange;
+
+      // Prevent staging a quantity below zero.
+      if (proposedNextQuantity < 0) {
+        setStatus(`Cannot reduce ${item.sku} below zero.`);
+        return currentChanges;
+      }
+
+      return {
+        ...currentChanges,
+        [item.id]: proposedPendingChange,
+      };
+    });
+
+    const sign = delta > 0 ? "+" : "";
+    setStatus(`Staged ${sign}${delta} for ${item.sku}`);
+  }
+
+  function clearPendingChanges() {
+    setPendingChanges({});
+    setStatus("Pending changes cleared.");
+  }
+
+  async function submitChanges() {
+    if (!user.trim()) {
+      setStatus("Enter initials before submitting changes.");
+      return;
+    }
+
+    if (stagedChanges.length === 0) {
+      setStatus("No pending changes to submit.");
+      return;
+    }
+
+    try {
+      setIsSaving(true);
+      setStatus("Submitting changes...");
+
+      const results = await submitInventoryChanges({
+        changes: stagedChanges,
+        signedBy: user.trim(),
+      });
+
+      setContents((currentContents) =>
+        currentContents.map((item) => {
+          const submittedItem = results.find(
+            (result) => result.contentId === item.id
+          );
+
+          if (!submittedItem) return item;
+
+          return {
+            ...item,
+            quantity: submittedItem.quantity,
+          };
+        })
+      );
+
+      setPendingChanges({});
+
+      const totalChanges = results.length;
+      setStatus(
+        `Submitted ${totalChanges} change${totalChanges === 1 ? "" : "s"}.`
+      );
+    } catch (error) {
+      setStatus(error.message || "Could not submit changes.");
+    } finally {
+      setIsSaving(false);
+    }
+  }
 
   if (!tray) {
     return (
       <main className="page">
         <section className="card">
-          <h1>Tray not found</h1>
-          <p>No tray exists with ID: {trayId}</p>
+          <p>{status}</p>
           <Link to="/" className="button-link">
             Back to dashboard
           </Link>
         </section>
       </main>
     );
-  }
-
-  function updateQuantity(sku, delta) {
-    if (!user.trim()) {
-      setStatus("Enter initials before making a change.");
-      return;
-    }
-
-    setContents((currentContents) =>
-      currentContents.map((item) => {
-        if (item.sku !== sku) return item;
-
-        const nextQuantity = Math.max(0, item.quantity + delta);
-
-        return {
-          ...item,
-          quantity: nextQuantity,
-        };
-      })
-    );
-
-    const sign = delta > 0 ? "+" : "";
-    setStatus(`${user.trim()} changed ${sku} by ${sign}${delta}`);
   }
 
   return (
@@ -61,21 +151,31 @@ export default function TrayPage() {
         </Link>
 
         <p className="eyebrow">Tray</p>
-        <h1>{tray.trayId}</h1>
+        <h1>{tray.tray_id}</h1>
 
         <div className="meta-grid">
           <div>
+            <span>Name</span>
+            <strong>{tray.tray_name || "—"}</strong>
+          </div>
+
+          <div>
             <span>Location</span>
-            <strong>{tray.location}</strong>
+            <strong>{tray.location || "—"}</strong>
           </div>
 
           <div>
             <span>SKUs in tray</span>
             <strong>{contents.length}</strong>
           </div>
+
+          <div>
+            <span>Pending changes</span>
+            <strong>{stagedChanges.length}</strong>
+          </div>
         </div>
 
-        <p>{tray.notes}</p>
+        {tray.notes && <p>{tray.notes}</p>}
 
         <label className="field">
           Initials / sign-off
@@ -99,35 +199,96 @@ export default function TrayPage() {
         </label>
 
         <div className="sku-list">
-          {contents.map((item) => (
-            <article key={item.sku} className="sku-card">
-              <div className="sku-main">
-                <div>
-                  <p className="sku">{item.sku}</p>
-                  <p className="sku-detail">
-                    Model {item.model} · {item.color}
-                  </p>
+          {contents.map((item) => {
+            const pendingChange = pendingChanges[item.id] || 0;
+            const nextQuantity = Math.max(0, item.quantity + pendingChange);
+            const pendingSign = pendingChange > 0 ? "+" : "";
+
+            return (
+              <article key={item.id} className="sku-card">
+                <div className="sku-main">
+                  <div>
+                    <p className="sku">{item.sku}</p>
+                    <p className="sku-detail">
+                      Model {item.skus?.model || "—"} ·{" "}
+                      {item.skus?.color || "—"}
+                    </p>
+                  </div>
+
+                  <div className="quantity-stack">
+                    <div className="quantity-pill">
+                      Current <strong>{item.quantity}</strong>
+                    </div>
+
+                    {pendingChange !== 0 && (
+                      <div className="pending-pill">
+                        Pending {pendingSign}
+                        {pendingChange} → New {nextQuantity}
+                      </div>
+                    )}
+                  </div>
                 </div>
 
-                <div className="quantity-pill">
-                  Qty <strong>{item.quantity}</strong>
+                <div className="button-row">
+                  <button
+                    disabled={isSaving}
+                    onClick={() => stageChange(item, -changeAmount)}
+                  >
+                    Remove {changeAmount}
+                  </button>
+
+                  <button
+                    disabled={isSaving}
+                    onClick={() => stageChange(item, changeAmount)}
+                  >
+                    Add {changeAmount}
+                  </button>
                 </div>
-              </div>
+              </article>
+            );
+          })}
+        </div>
 
-              <div className="button-row">
-                <button onClick={() => updateQuantity(item.sku, -changeAmount)}>
-                  Remove {changeAmount}
-                </button>
+        <div className="submit-panel">
+          <h2>Pending submission</h2>
 
-                <button onClick={() => updateQuantity(item.sku, changeAmount)}>
-                  Add {changeAmount}
-                </button>
-              </div>
-            </article>
-          ))}
+          {stagedChanges.length === 0 ? (
+            <p>No pending changes.</p>
+          ) : (
+            <ul>
+              {stagedChanges.map((change) => {
+                const sign = change.changeAmount > 0 ? "+" : "";
+
+                return (
+                  <li key={change.contentId}>
+                    {change.sku}: {sign}
+                    {change.changeAmount} → {change.nextQuantity}
+                  </li>
+                );
+              })}
+            </ul>
+          )}
+
+          <div className="button-row">
+            <button
+              className="secondary-button"
+              disabled={isSaving}
+              onClick={clearPendingChanges}
+            >
+              Clear
+            </button>
+
+            <button disabled={isSaving} onClick={submitChanges}>
+              Submit Changes
+            </button>
+          </div>
         </div>
 
         <p className="status">{status}</p>
+
+        <button className="secondary-button" onClick={loadTrayData}>
+          Refresh from Database
+        </button>
       </section>
     </main>
   );
