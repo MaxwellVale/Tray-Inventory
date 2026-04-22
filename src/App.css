@@ -1,0 +1,233 @@
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  background: #f4f4f5;
+  color: #111827;
+  font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI",
+    sans-serif;
+}
+
+a {
+  color: inherit;
+}
+
+.app-shell {
+  min-height: 100vh;
+}
+
+.app-header {
+  background: white;
+  border-bottom: 1px solid #e5e7eb;
+  padding: 16px 20px;
+}
+
+.brand {
+  font-weight: 800;
+  text-decoration: none;
+}
+
+.page {
+  width: min(900px, 100%);
+  margin: 0 auto;
+  padding: 24px;
+}
+
+.card {
+  background: white;
+  border-radius: 18px;
+  box-shadow: 0 10px 30px rgba(15, 23, 42, 0.08);
+  padding: 24px;
+}
+
+.eyebrow {
+  margin: 0;
+  color: #6b7280;
+  font-size: 0.78rem;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+h1 {
+  margin: 8px 0 12px;
+}
+
+.tray-list {
+  display: grid;
+  gap: 12px;
+  margin-top: 24px;
+}
+
+.tray-link {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 16px;
+  border: 1px solid #e5e7eb;
+  border-radius: 14px;
+  text-decoration: none;
+  transition: transform 120ms ease, border-color 120ms ease;
+}
+
+.tray-link:hover {
+  transform: translateY(-1px);
+  border-color: #9ca3af;
+}
+
+.tray-link span {
+  display: block;
+  margin-top: 4px;
+  color: #6b7280;
+  font-size: 0.92rem;
+}
+
+.tray-summary {
+  color: #374151;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.back-link {
+  display: inline-block;
+  margin-bottom: 18px;
+  color: #374151;
+  text-decoration: none;
+  font-weight: 700;
+}
+
+.meta-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 12px;
+  margin: 20px 0;
+}
+
+.meta-grid div {
+  border: 1px solid #e5e7eb;
+  border-radius: 14px;
+  padding: 14px;
+}
+
+.meta-grid span {
+  display: block;
+  color: #6b7280;
+  font-size: 0.88rem;
+}
+
+.meta-grid strong {
+  display: block;
+  margin-top: 4px;
+}
+
+.field {
+  display: block;
+  margin: 16px 0;
+  font-weight: 700;
+}
+
+input {
+  display: block;
+  width: 100%;
+  margin-top: 6px;
+  padding: 13px 14px;
+  border: 1px solid #d1d5db;
+  border-radius: 12px;
+  font: inherit;
+}
+
+.sku-list {
+  display: grid;
+  gap: 14px;
+  margin-top: 24px;
+}
+
+.sku-card {
+  border: 1px solid #e5e7eb;
+  border-radius: 16px;
+  padding: 16px;
+}
+
+.sku-main {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.sku {
+  margin: 0;
+  font-size: 1.05rem;
+  font-weight: 850;
+}
+
+.sku-detail {
+  margin: 4px 0 0;
+  color: #6b7280;
+}
+
+.quantity-pill {
+  border-radius: 999px;
+  background: #f3f4f6;
+  padding: 10px 14px;
+  white-space: nowrap;
+}
+
+.quantity-pill strong {
+  font-size: 1.3rem;
+}
+
+.button-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+  margin-top: 14px;
+}
+
+button,
+.button-link {
+  border: none;
+  border-radius: 12px;
+  background: #111827;
+  color: white;
+  cursor: pointer;
+  display: inline-block;
+  font: inherit;
+  font-weight: 800;
+  padding: 13px 16px;
+  text-align: center;
+  text-decoration: none;
+}
+
+.status {
+  margin-top: 18px;
+  color: #374151;
+  font-weight: 650;
+}
+
+@media (max-width: 640px) {
+  .page {
+    padding: 14px;
+  }
+
+  .card {
+    padding: 18px;
+  }
+
+  .tray-link,
+  .sku-main {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .tray-summary {
+    white-space: normal;
+  }
+
+  .meta-grid {
+    grid-template-columns: 1fr;
+  }
+}
