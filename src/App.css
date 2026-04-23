@@ -53,6 +53,7 @@ a {
 
 h1 {
   margin: 8px 0 12px;
+  color: black
 }
 
 .tray-list {
@@ -287,4 +288,40 @@ button,
 button:disabled {
   cursor: not-allowed;
   opacity: 0.6;
+}
+
+.frame-search-card {
+  margin-top: 20px;
+}
+
+.frame-results {
+  display: grid;
+  gap: 14px;
+  margin-top: 20px;
+}
+
+.frame-result-card {
+  border: 1px solid #e5e7eb;
+  border-radius: 16px;
+  padding: 16px;
+  display: flex;
+  justify-content: space-between;
+  gap: 16px;
+  align-items: flex-start;
+}
+
+.frame-location-meta {
+  display: grid;
+  gap: 8px;
+  justify-items: end;
+}
+
+@media (max-width: 640px) {
+  .frame-result-card {
+    flex-direction: column;
+  }
+
+  .frame-location-meta {
+    justify-items: start;
+  }
 }

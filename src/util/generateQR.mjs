@@ -5,7 +5,7 @@ import path from "path";
 const trayIds = ["TRAY-001", "TRAY-002", "TRAY-003"];
 const ip = "192.168.61.11";
 const port = "5173";
-const baseUrl = `https://${ip}:${port}/tray`;
+const baseUrl = `http://${ip}:${port}/tray`;
 
 const outputDir = "./qr-output";
 if (!fs.existsSync(outputDir)) {

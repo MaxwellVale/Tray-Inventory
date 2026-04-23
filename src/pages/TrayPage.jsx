@@ -14,6 +14,7 @@ export default function TrayPage() {
   const [pendingChanges, setPendingChanges] = useState({});
   const [user, setUser] = useState("");
   const [changeAmount, setChangeAmount] = useState(1);
+  const [changeAmountInput, setChangeAmountInput] = useState("1");
   const [status, setStatus] = useState("Loading...");
   const [isSaving, setIsSaving] = useState(false);
 
@@ -46,7 +47,7 @@ export default function TrayPage() {
         return {
           contentId: item.id,
           trayId: item.tray_id,
-          sku: item.sku,
+          frame_id: item.frame_id,
           currentQuantity: item.quantity,
           changeAmount: pendingChange,
           nextQuantity: Math.max(0, item.quantity + pendingChange),
@@ -63,7 +64,7 @@ export default function TrayPage() {
 
       // Prevent staging a quantity below zero.
       if (proposedNextQuantity < 0) {
-        setStatus(`Cannot reduce ${item.sku} below zero.`);
+        setStatus(`Cannot reduce ${item.frame_id} below zero.`);
         return currentChanges;
       }
 
@@ -74,7 +75,7 @@ export default function TrayPage() {
     });
 
     const sign = delta > 0 ? "+" : "";
-    setStatus(`Staged ${sign}${delta} for ${item.sku}`);
+    setStatus(`Staged ${sign}${delta} for ${item.frame_id}`);
   }
 
   function clearPendingChanges() {
@@ -129,6 +130,37 @@ export default function TrayPage() {
       setIsSaving(false);
     }
   }
+
+    function handleChangeAmountInput(event) {
+        setChangeAmountInput(event.target.value);
+    }
+
+    function commitChangeAmount() {
+        const trimmedValue = changeAmountInput.trim();
+
+        if (trimmedValue === "") {
+            setChangeAmountInput(String(changeAmount));
+            return;
+        }
+
+        const parsedValue = Number(trimmedValue);
+
+        if (!Number.isFinite(parsedValue) || parsedValue < 1) {
+            setChangeAmountInput(String(changeAmount));
+            return;
+        }
+
+        const nextValue = Math.floor(parsedValue);
+        setChangeAmount(nextValue);
+        setChangeAmountInput(String(nextValue));
+    }
+
+    function handleChangeAmountKeyDown(event) {
+        if (event.key === "Enter") {
+            event.preventDefault();
+            commitChangeAmount();
+        }
+    }
 
   if (!tray) {
     return (
@@ -191,11 +223,11 @@ export default function TrayPage() {
           <input
             type="number"
             min="1"
-            value={changeAmount}
-            onChange={(event) =>
-              setChangeAmount(Math.max(1, Number(event.target.value)))
-            }
-          />
+            value={changeAmountInput}
+            onChange={handleChangeAmountInput}
+            onBlur={commitChangeAmount}
+            onKeyDown={handleChangeAmountKeyDown}
+            />
         </label>
 
         <div className="sku-list">
@@ -208,10 +240,11 @@ export default function TrayPage() {
               <article key={item.id} className="sku-card">
                 <div className="sku-main">
                   <div>
-                    <p className="sku">{item.sku}</p>
+                    <p className="sku">{item.frame_id}</p>
                     <p className="sku-detail">
-                      Model {item.skus?.model || "—"} ·{" "}
-                      {item.skus?.color || "—"}
+                      Model {item.frame_ids?.model || "—"} ·{" "}
+                      {item.frame_ids?.color || "—"} ·{" "}
+                      {item.frame_ids?.sku || "-"}
                     </p>
                   </div>
 
@@ -261,7 +294,7 @@ export default function TrayPage() {
 
                 return (
                   <li key={change.contentId}>
-                    {change.sku}: {sign}
+                    {change.frame_id}: {sign}
                     {change.changeAmount} → {change.nextQuantity}
                   </li>
                 );
