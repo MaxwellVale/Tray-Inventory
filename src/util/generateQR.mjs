@@ -2,10 +2,10 @@ import QRCode from "qrcode";
 import fs from "fs";
 import path from "path";
 
-const trayIds = ["TRAY-001", "TRAY-002", "TRAY-003"];
+const trayIds = ["TRAY-004"];
 const ip = "192.168.61.11";
 const port = "5173";
-const baseUrl = `http://${ip}:${port}/tray`;
+const baseUrl = `http://${ip}:${port}/tray`; // use backticks to format the string
 
 const outputDir = "./qr-output";
 if (!fs.existsSync(outputDir)) {

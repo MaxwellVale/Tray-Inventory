@@ -58,7 +58,8 @@ export default function Dashboard() {
     return (
       tray.tray_id?.toLowerCase().includes(search) ||
       tray.tray_name?.toLowerCase().includes(search) ||
-      tray.location?.toLowerCase().includes(search) ||
+      tray.rack?.toLowerCase().includes(search) ||
+      tray.shelf?.toLowerCase().includes(search) ||
       tray.notes?.toLowerCase().includes(search)
     );
   });
@@ -95,7 +96,7 @@ export default function Dashboard() {
               <div>
                 <strong>{tray.tray_id}</strong>
                 <span>{tray.tray_name || "Unnamed tray"}</span>
-                <span>{tray.location || "No location set"}</span>
+                <span>{"Rack " + tray.rack + " / Shelf " + tray.shelf || "No location set"}</span>
               </div>
 
               <div className="tray-summary">
@@ -162,7 +163,7 @@ export default function Dashboard() {
                   {result.trays?.tray_name || "Unnamed tray"}
                 </p>
                 <p className="sku-detail">
-                  {result.trays?.location || "No location set"}
+                  {result.trays?.rack + " / " + result.trays?.shelf || "No location set"}
                 </p>
               </div>
             </article>

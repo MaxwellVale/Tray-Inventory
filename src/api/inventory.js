@@ -93,7 +93,8 @@ export async function getDashboardTrays() {
       `
       tray_id,
       tray_name,
-      location,
+      rack,
+      shelf,
       notes,
       tray_contents (
         id,
@@ -146,7 +147,8 @@ export async function searchFrameLocations(searchTerm) {
         trays (
           tray_id,
           tray_name,
-          location
+          rack, 
+          shelf
         )
       )
     `
