@@ -67,7 +67,7 @@ export default function Dashboard() {
   return (
     <main className="page">
       <section className="card">
-        <p className="eyebrow">Inventory</p>
+        {/* <p className="eyebrow">Inventory</p> */}
         <h1>Tray Inventory</h1>
         <p>Search trays or search for a frame to see where it is located.</p>
 
@@ -163,7 +163,7 @@ export default function Dashboard() {
                   {result.trays?.tray_name || "Unnamed tray"}
                 </p>
                 <p className="sku-detail">
-                  {result.trays?.rack + " / " + result.trays?.shelf || "No location set"}
+                  {"Rack " + result.trays?.rack + " / Shelf " + result.trays?.shelf || "No location set"}
                 </p>
               </div>
             </article>

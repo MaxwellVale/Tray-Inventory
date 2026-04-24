@@ -22,11 +22,11 @@ export async function getTrayContents(trayId) {
       quantity,
       updated_at,
       frame_ids (
+        line,
         model,
         color,
         sku,
-        description,
-        notes
+        description
       )
     `
     )
@@ -136,6 +136,7 @@ export async function searchFrameLocations(searchTerm) {
     .select(
       `
       frame_id,
+      line,
       model,
       color,
       description,
@@ -156,6 +157,7 @@ export async function searchFrameLocations(searchTerm) {
     .or(
       [
         `frame_id.ilike.${pattern}`,
+        `line.ilike.${pattern}`,
         `model.ilike.${pattern}`,
         `color.ilike.${pattern}`,
         `sku.ilike.${pattern}`
@@ -177,6 +179,7 @@ export async function searchFrameLocations(searchTerm) {
         frame_id: frame.frame_id,
         frame_ids: {
           frame_id: frame.frame_id,
+          line: frame.line,
           model: frame.model,
           color: frame.color,
           description: frame.description,

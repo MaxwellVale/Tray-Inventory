@@ -182,7 +182,7 @@ export default function TrayPage() {
           ← Back
         </Link>
 
-        <p className="eyebrow">Tray</p>
+        <p className="eyebrow">Tray ID</p>
         <h1>{tray.tray_id}</h1>
 
         <div className="meta-grid">
@@ -193,7 +193,7 @@ export default function TrayPage() {
 
           <div>
             <span>Location</span>
-            <strong>{tray.location || "—"}</strong>
+            <strong>{"Rack " + tray.rack + " / Shelf " + tray.shelf || "—"}</strong>
           </div>
 
           <div>
