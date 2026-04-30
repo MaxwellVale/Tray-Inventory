@@ -247,19 +247,31 @@ button,
 }
 
 .quantity-stack {
-  display: grid;
-  gap: 8px;
-  justify-items: end;
+  display: flex;
+  justify-content: flex-end;
 }
 
-.pending-pill {
+.quantity-pill {
   border-radius: 999px;
+  background: #f3f4f6;
+  color: #111827;
+  padding: 10px 14px;
+  white-space: nowrap;
+  font-weight: 700;
+}
+
+.quantity-pill strong {
+  font-size: 1.3rem;
+}
+
+.quantity-pill-positive {
   background: #ecfdf5;
   color: #065f46;
-  padding: 8px 12px;
-  font-size: 0.9rem;
-  font-weight: 800;
-  white-space: nowrap;
+}
+
+.quantity-pill-negative {
+  background: #fef2f2;
+  color: #991b1b;
 }
 
 .submit-panel {

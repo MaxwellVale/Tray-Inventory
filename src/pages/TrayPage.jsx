@@ -5,14 +5,15 @@ import {
   getTrayContents,
   submitInventoryChanges,
 } from "../api/inventory";
+import { useAuth } from "../lib/AuthContext";
 
 export default function TrayPage() {
+  const { authUser } = useAuth();
   const { trayId } = useParams();
 
   const [tray, setTray] = useState(null);
   const [contents, setContents] = useState([]);
   const [pendingChanges, setPendingChanges] = useState({});
-  const [user, setUser] = useState("");
   const [changeAmount, setChangeAmount] = useState(1);
   const [changeAmountInput, setChangeAmountInput] = useState("1");
   const [status, setStatus] = useState("Loading...");
@@ -84,8 +85,8 @@ export default function TrayPage() {
   }
 
   async function submitChanges() {
-    if (!user.trim()) {
-      setStatus("Enter initials before submitting changes.");
+    if (!authUser) {
+      setStatus("You must be signed in to submit changes.");
       return;
     }
 
@@ -100,7 +101,7 @@ export default function TrayPage() {
 
       const results = await submitInventoryChanges({
         changes: stagedChanges,
-        signedBy: user.trim(),
+        signedBy: authUser.email,
       });
 
       setContents((currentContents) =>
@@ -210,15 +211,6 @@ export default function TrayPage() {
         {tray.notes && <p>{tray.notes}</p>}
 
         <label className="field">
-          Initials / sign-off
-          <input
-            value={user}
-            onChange={(event) => setUser(event.target.value)}
-            placeholder="e.g. MV"
-          />
-        </label>
-
-        <label className="field">
           Change amount
           <input
             type="number"
@@ -249,16 +241,25 @@ export default function TrayPage() {
                   </div>
 
                   <div className="quantity-stack">
-                    <div className="quantity-pill">
-                      Current <strong>{item.quantity}</strong>
+                    <div
+                      className={`quantity-pill ${
+                        pendingChange > 0
+                          ? "quantity-pill-positive"
+                          : pendingChange < 0
+                          ? "quantity-pill-negative"
+                          : ""
+                      }`}
+                    >
+                      {pendingChange === 0 ? (
+                        <>
+                          Qty <strong>{item.quantity}</strong>
+                        </>
+                      ) : (
+                        <>
+                          <span>{item.quantity}</span> → <strong>{nextQuantity}</strong> <span>({pendingSign}{pendingChange})</span>
+                        </>
+                      )}
                     </div>
-
-                    {pendingChange !== 0 && (
-                      <div className="pending-pill">
-                        Pending {pendingSign}
-                        {pendingChange} → New {nextQuantity}
-                      </div>
-                    )}
                   </div>
                 </div>
 
@@ -283,19 +284,23 @@ export default function TrayPage() {
         </div>
 
         <div className="submit-panel">
-          <h2>Pending submission</h2>
+          {stagedChanges.length === 1 ? (
+            <h2>Pending submission</h2>
+          ) : (
+            <h2>Pending submissions</h2>
+          )}
 
           {stagedChanges.length === 0 ? (
             <p>No pending changes.</p>
           ) : (
-            <ul>
+            <ul style={{'listStyleType': 'None'}}>
               {stagedChanges.map((change) => {
                 const sign = change.changeAmount > 0 ? "+" : "";
 
                 return (
                   <li key={change.contentId}>
-                    {change.frame_id}: {sign}
-                    {change.changeAmount} → {change.nextQuantity}
+                    {change.frame_id}:{" "}
+                    {change.currentQuantity} → {change.nextQuantity} ({sign} {change.changeAmount})
                   </li>
                 );
               })}
@@ -311,8 +316,12 @@ export default function TrayPage() {
               Clear
             </button>
 
-            <button disabled={isSaving} onClick={submitChanges}>
-              Submit Changes
+            <button
+              className="secondary-button"
+              disabled={isSaving || !authUser} 
+              onClick={submitChanges}
+            >
+              {authUser ? "Submit Changes" : "Sign in to Submit"}
             </button>
           </div>
         </div>
@@ -320,7 +329,7 @@ export default function TrayPage() {
         <p className="status">{status}</p>
 
         <button className="secondary-button" onClick={loadTrayData}>
-          Refresh from Database
+          Refresh
         </button>
       </section>
     </main>
