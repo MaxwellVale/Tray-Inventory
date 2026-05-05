@@ -192,3 +192,138 @@ export async function searchFrameLocations(searchTerm) {
 
   return flattenedResults;
 }
+
+export async function getAllTraysBasic() {
+  const { data, error } = await supabase
+    .from("trays")
+    .select("tray_id, tray_name, rack, shelf")
+    .order("tray_id", { ascending: true });
+
+  if (error) throw error;
+  return data;
+}
+
+export async function moveFrameBetweenTrays({
+  sourceTrayId,
+  destinationTrayId,
+  frameId,
+  moveQuantity,
+  signedBy,
+}) {
+  if (!sourceTrayId || !destinationTrayId || !frameId || !signedBy) {
+    throw new Error("Missing required move fields.");
+  }
+
+  if (sourceTrayId === destinationTrayId) {
+    throw new Error("Source and destination trays must be different.");
+  }
+
+  if (!Number.isFinite(moveQuantity) || moveQuantity < 1) {
+    throw new Error("Move quantity must be at least 1.");
+  }
+
+  // 1. get source row
+  const { data: sourceRow, error: sourceError } = await supabase
+    .from("tray_contents")
+    .select("id, tray_id, frame_id, quantity")
+    .eq("tray_id", sourceTrayId)
+    .eq("frame_id", frameId)
+    .single();
+
+  if (sourceError) throw sourceError;
+
+  if (sourceRow.quantity < moveQuantity) {
+    throw new Error("Cannot move more than the available quantity.");
+  }
+
+  const sourceNextQuantity = sourceRow.quantity - moveQuantity;
+
+  // 2. check destination row
+  const { data: destinationRows, error: destinationLookupError } = await supabase
+    .from("tray_contents")
+    .select("id, tray_id, frame_id, quantity")
+    .eq("tray_id", destinationTrayId)
+    .eq("frame_id", frameId);
+
+  if (destinationLookupError) throw destinationLookupError;
+
+  const destinationRow = destinationRows?.[0] ?? null;
+
+  // 3. update source
+  if (sourceNextQuantity === 0) {
+    const { error: deleteSourceError } = await supabase
+      .from("tray_contents")
+      .delete()
+      .eq("id", sourceRow.id);
+
+    if (deleteSourceError) throw deleteSourceError;
+  } else {
+    const { error: updateSourceError } = await supabase
+      .from("tray_contents")
+      .update({
+        quantity: sourceNextQuantity,
+        updated_at: new Date().toISOString(),
+      })
+      .eq("id", sourceRow.id);
+
+    if (updateSourceError) throw updateSourceError;
+  }
+
+  // 4. update or insert destination
+  let destinationNextQuantity = moveQuantity;
+
+  if (destinationRow) {
+    destinationNextQuantity = destinationRow.quantity + moveQuantity;
+
+    const { error: updateDestinationError } = await supabase
+      .from("tray_contents")
+      .update({
+        quantity: destinationNextQuantity,
+        updated_at: new Date().toISOString(),
+      })
+      .eq("id", destinationRow.id);
+
+    if (updateDestinationError) throw updateDestinationError;
+  } else {
+    const { error: insertDestinationError } = await supabase
+      .from("tray_contents")
+      .insert({
+        tray_id: destinationTrayId,
+        frame_id: frameId,
+        quantity: moveQuantity,
+      });
+
+    if (insertDestinationError) throw insertDestinationError;
+  }
+
+  // 5. log both transactions
+  const transactionRows = [
+    {
+      tray_id: sourceTrayId,
+      frame_id: frameId,
+      change_amount: -moveQuantity,
+      quantity_after: sourceNextQuantity,
+      signed_by: signedBy,
+      action: "moved_out",
+    },
+    {
+      tray_id: destinationTrayId,
+      frame_id: frameId,
+      change_amount: moveQuantity,
+      quantity_after: destinationNextQuantity,
+      signed_by: signedBy,
+      action: "moved_in",
+    },
+  ];
+
+  const { error: transactionError } = await supabase
+    .from("transactions")
+    .insert(transactionRows);
+
+  if (transactionError) throw transactionError;
+
+  return {
+    sourceNextQuantity,
+    destinationNextQuantity,
+  };
+}

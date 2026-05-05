@@ -4,6 +4,8 @@ import {
   getTray,
   getTrayContents,
   submitInventoryChanges,
+  getAllTraysBasic,
+  moveFrameBetweenTrays,
 } from "../api/inventory";
 import { useAuth } from "../lib/AuthContext";
 
@@ -19,16 +21,24 @@ export default function TrayPage() {
   const [status, setStatus] = useState("Loading...");
   const [isSaving, setIsSaving] = useState(false);
 
+  const [allTrays, setAllTrays] = useState([]);
+  const [moveFrameId, setMoveFrameId] = useState("");
+  const [moveDestinationTrayId, setMoveDestinationTrayId] = useState("");
+  const [moveQuantityInput, setMoveQuantityInput] = useState("1");
+  const [isMoving, setIsMoving] = useState(false);
+
   async function loadTrayData() {
     try {
       setStatus("Loading...");
-      const [trayData, contentsData] = await Promise.all([
+      const [trayData, contentsData, trayList] = await Promise.all([
         getTray(trayId),
         getTrayContents(trayId),
+        getAllTraysBasic(),
       ]);
 
       setTray(trayData);
       setContents(contentsData);
+      setAllTrays(trayList);
       setPendingChanges({});
       setStatus("Ready");
     } catch (error) {
@@ -39,6 +49,54 @@ export default function TrayPage() {
   useEffect(() => {
     loadTrayData();
   }, [trayId]);
+
+  async function handleMoveFrame() {
+    if (!authUser) {
+      setStatus("You must be signed in to move frames.");
+      return;
+    }
+
+    if (!moveFrameId) {
+      setStatus("Select a frame to move.");
+      return;
+    }
+
+    if (!moveDestinationTrayId) {
+      setStatus("Select a destination tray.");
+      return;
+    }
+
+    const parsedMoveQuantity = Number(moveQuantityInput);
+
+    if (!Number.isFinite(parsedMoveQuantity) || parsedMoveQuantity < 1) {
+      setStatus("Move quantity must be at least 1.");
+      return;
+    }
+
+    try {
+      setIsMoving(true);
+      setStatus("Moving frames...");
+
+      await moveFrameBetweenTrays({
+        sourceTrayId: trayId,
+        destinationTrayId: moveDestinationTrayId,
+        frameId: moveFrameId,
+        moveQuantity: parsedMoveQuantity,
+        signedBy: authUser.email,
+      });
+
+      setMoveFrameId("");
+      setMoveDestinationTrayId("");
+      setMoveQuantityInput("1");
+
+      await loadTrayData();
+      setStatus(`Moved ${parsedMoveQuantity} of ${moveFrameId} to ${moveDestinationTrayId}.`);
+    } catch (error) {
+      setStatus(error.message || "Could not move frame.");
+    } finally {
+      setIsMoving(false);
+    }
+  }
 
   const stagedChanges = useMemo(() => {
     return contents
@@ -324,6 +382,63 @@ export default function TrayPage() {
               {authUser ? "Submit Changes" : "Sign in to Submit"}
             </button>
           </div>
+        </div>
+
+        <div className="submit-panel">
+          <h2>Relocate Frames</h2>
+
+          {!authUser ? (
+            <p>You must be signed in to move frames.</p>
+          ) : (
+            <>
+              <label className="field">
+                Frame to move
+                <select
+                  value={moveFrameId}
+                  onChange={(event) => setMoveFrameId(event.target.value)}
+                >
+                  <option value="">Select a frame</option>
+                  {contents.map((item) => (
+                    <option key={item.id} value={item.frame_id}>
+                      {item.frame_id} — Qty {item.quantity}
+                    </option>
+                  ))}
+                </select>
+              </label>
+
+              <label className="field">
+                Quantity to move
+                <input
+                  type="number"
+                  min="1"
+                  value={moveQuantityInput}
+                  onChange={(event) => setMoveQuantityInput(event.target.value)}
+                />
+              </label>
+
+              <label className="field">
+                Destination tray
+                <select
+                  value={moveDestinationTrayId}
+                  onChange={(event) => setMoveDestinationTrayId(event.target.value)}
+                >
+                  <option value="">Select destination tray</option>
+                  {allTrays
+                    .filter((trayOption) => trayOption.tray_id !== trayId)
+                    .map((trayOption) => (
+                      <option key={trayOption.tray_id} value={trayOption.tray_id}>
+                        {trayOption.tray_id} — {trayOption.tray_name || "Unnamed tray"} — Rack{" "}
+                        {trayOption.rack || "—"} / Shelf {trayOption.shelf ?? "—"}
+                      </option>
+                    ))}
+                </select>
+              </label>
+
+              <button disabled={isMoving} onClick={handleMoveFrame}>
+                {isMoving ? "Moving..." : "Move Frames"}
+              </button>
+            </>
+          )}
         </div>
 
         <p className="status">{status}</p>
