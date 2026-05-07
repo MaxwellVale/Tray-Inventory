@@ -2,3 +2,6 @@ frame_id,sku,line,model,color,description
 ,,CGSG,0173,B,"Sunglasses
 0173
 B - Black"
+,,CGOP,00001,Test,Test Frame 1
+,,CGOP,00002,Test,Test Frame 2
+,,CGOP,00003,Test,Test Frame 3

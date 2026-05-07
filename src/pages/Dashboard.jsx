@@ -145,42 +145,50 @@ export default function Dashboard() {
             {Object.keys(groupedTrays)
               .sort()
               .map((rackKey) => (
-                <section key={rackKey} className="rack-group">
-                  <h2>Rack {rackKey}</h2>
+                <details key={rackKey} className="rack-group" open>
+                  <summary className="rack-summary">Rack {rackKey}</summary>
 
-                  {Object.keys(groupedTrays[rackKey])
-                    .sort((a, b) => String(a).localeCompare(String(b)))
-                    .map((shelfKey) => (
-                      <div key={shelfKey} className="shelf-group">
-                        <h3>Shelf {shelfKey}</h3>
+                  <div className="rack-group-body">
+                    {Object.keys(groupedTrays[rackKey])
+                      .sort((a, b) => String(a).localeCompare(String(b)))
+                      .map((shelfKey) => (
+                        <details key={shelfKey} className="shelf-group">
+                          <summary className="shelf-summary">Shelf {shelfKey}</summary>
 
-                        <div className="tray-list">
-                          {groupedTrays[rackKey][shelfKey].map((tray) => (
-                            <Link
-                              key={tray.tray_id}
-                              className="tray-link"
-                              to={`/tray/${tray.tray_id}`}
-                            >
-                              <div className="tray-info">
-                                <strong>{tray.tray_id}</strong>
-                                <span>{tray.tray_name || "Unnamed tray"}</span>
-                                <span>
-                                  Rack {tray.rack || "—"} / Shelf{" "}
-                                  {tray.shelf ?? "—"}
-                                </span>
-                              </div>
+                          <div className="shelf-group-body">
+                            <div className="tray-list">
+                              {groupedTrays[rackKey][shelfKey].map((tray) => (
+                                <Link
+                                  key={tray.tray_id}
+                                  className="tray-link"
+                                  to={`/tray/${tray.tray_id}`}
+                                >
+                                  <div className="tray-info">
+                                    <strong>{highlightMatch(tray.tray_id, searchTerm)}</strong>
+                                    <span>
+                                      {highlightMatch(
+                                        tray.tray_name || "Unnamed tray",
+                                        searchTerm
+                                      )}
+                                    </span>
+                                    <span>
+                                      Rack {highlightMatch(tray.rack || "—", searchTerm)} / Shelf{" "}
+                                      {highlightMatch(String(tray.shelf ?? "—"), searchTerm)}
+                                    </span>
+                                  </div>
 
-                              <div className="tray-summary">
-                                {tray.frameCount} frame
-                                {tray.frameCount === 1 ? "" : "s"} ·{" "}
-                                {tray.totalQuantity} total
-                              </div>
-                            </Link>
-                          ))}
-                        </div>
-                      </div>
-                    ))}
-                </section>
+                                  <div className="tray-summary">
+                                    {tray.frameCount} frame
+                                    {tray.frameCount === 1 ? "" : "s"} · {tray.totalQuantity} total
+                                  </div>
+                                </Link>
+                              ))}
+                            </div>
+                          </div>
+                        </details>
+                      ))}
+                  </div>
+                </details>
               ))}
           </div>
         ) : (
@@ -229,13 +237,9 @@ export default function Dashboard() {
                 {frameResults.map((result) => (
                   <article key={result.id} className="frame-result-card">
                     <div>
-                      <p className="sku">{result.frame_id}</p>
+                      <p className="sku">{highlightMatch(result.frame_id, searchTerm)}</p>
                       <p className="sku-detail">
-                        Model {result.frame_ids?.model || "—"} ·{" "}
-                        {result.frame_ids?.color || "—"}
-                      </p>
-                      <p className="sku-detail">
-                        SKU: {result.frame_ids?.sku || "—"}
+                        SKU: {highlightMatch(result.frame_ids?.sku || "—", searchTerm)}
                       </p>
                     </div>
 

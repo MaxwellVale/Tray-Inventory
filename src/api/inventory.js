@@ -52,15 +52,24 @@ export async function submitInventoryChanges({ changes, signedBy }) {
     const nextQuantity = Math.max(0, currentQuantity + changeAmount);
     const action = changeAmount < 0 ? "removed" : "added";
 
-    const { error: updateError } = await supabase
-      .from("tray_contents")
-      .update({
-        quantity: nextQuantity,
-        updated_at: new Date().toISOString(),
-      })
-      .eq("id", contentId);
+    if (nextQuantity === 0) {
+      const { error: deleteError } = await supabase
+        .from("tray_contents")
+        .delete()
+        .eq("id", contentId);
+      
+      if (deleteError) throw deleteError;
+    } else {
+      const { error: updateError } = await supabase
+        .from("tray_contents")
+        .update({
+          quantity: nextQuantity,
+          updated_at: new Date().toISOString(),
+        })
+        .eq("id", contentId);
 
-    if (updateError) throw updateError;
+      if (updateError) throw updateError;
+    }
 
     const { error: transactionError } = await supabase
       .from("transactions")
@@ -203,6 +212,16 @@ export async function getAllTraysBasic() {
   return data;
 }
 
+export async function getAllFrameIdsBasic() {
+  const { data, error } = await supabase
+    .from("frame_ids")
+    .select("frame_id, model, color, sku")
+    .order("frame_id", { ascending: true });
+
+  if (error) throw error;
+  return data;
+}
+
 export async function moveFrameBetweenTrays({
   sourceTrayId,
   destinationTrayId,
@@ -326,4 +345,56 @@ export async function moveFrameBetweenTrays({
     sourceNextQuantity,
     destinationNextQuantity,
   };
+}
+
+export async function addNewFrameToTray({
+  trayId,
+  frameId,
+  quantity,
+  signedBy,
+}) {
+  if (!trayId || !frameId || !signedBy) {
+    throw new Error("Missing required fields.");
+  }
+
+  if (!Number.isFinite(quantity) || quantity < 1) {
+    throw new Error("Quantity must be at least 1.");
+  }
+
+  const { data: existingRows, error: existingLookupError } = await supabase
+    .from("tray_contents")
+    .select("id, quantity")
+    .eq("tray_id", trayId)
+    .eq("frame_id", frameId);
+
+  if (existingLookupError) throw existingLookupError;
+
+  if (existingRows && existingRows.length > 0) {
+    throw new Error("This frame is already in the tray. Use quantity changes or move frames instead.");
+  }
+
+  const { error: insertError } = await supabase
+    .from("tray_contents")
+    .insert({
+      tray_id: trayId,
+      frame_id: frameId,
+      quantity,
+    });
+
+  if (insertError) throw insertError;
+
+  const { error: transactionError } = await supabase
+    .from("transactions")
+    .insert({
+      tray_id: trayId,
+      frame_id: frameId,
+      change_amount: quantity,
+      quantity_after: quantity,
+      signed_by: signedBy,
+      action: "new_frame",
+    });
+
+  if (transactionError) throw transactionError;
+
+  return true;
 }
