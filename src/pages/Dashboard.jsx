@@ -120,10 +120,10 @@ export default function Dashboard() {
       <section className="card">
         <p className="eyebrow">Inventory</p>
         <h1>Tray Inventory</h1>
-        <p>
+        {/* <p>
           Search trays or frames from one bar. Leave it blank to browse by rack
           and shelf.
-        </p>
+        </p> */}
 
         <label className="field">
           Search trays, frame IDs, models, colors, SKU, rack, shelf...
