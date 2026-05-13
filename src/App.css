@@ -19,9 +19,18 @@ a {
 }
 
 .app-header {
+  width: 100%;
   background: white;
   border-bottom: 1px solid #e5e7eb;
-  padding: 16px 20px;
+  /* padding: 16px 20px; */
+}
+
+.app-header-inner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 16px 32px;
 }
 
 .brand {
@@ -29,16 +38,27 @@ a {
   text-decoration: none;
 }
 
+.header-actions {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.user-label {
+  color: #374151;
+  font-weight: 700;
+}
+
 .page {
-  width: min(1200px, 100%);
+  width: min(1248px, 100%);
   margin: 0 auto;
   padding: 24px;
 }
 
 .card {
   background: white;
-  border-radius: 18px;
-  box-shadow: 0 10px 30px rgba(15, 23, 42, 0.08);
+  border-radius: 22px;
+  box-shadow: 0 8px 24px rgba(15, 23, 42, 0.08);
   padding: 24px;
 }
 
@@ -515,7 +535,7 @@ button:disabled {
 
 .rack-group,
 .shelf-group {
-  border: 1px solid #d1d5db;
+  border: 1px solid #d8dadd;
   border-radius: 16px;
   background: white;
   overflow: hidden;
@@ -534,37 +554,31 @@ button:disabled {
 }
 
 .rack-summary {
-  padding: 16px 18px;
-  font-size: 1.2rem;
+  padding: 14px 18px;
+  font-size: 1.15rem;
   font-weight: 800;
   color: #111827;
-  background: #9a9a9a;
+  background: #d7d9dc;
   border-bottom: 1px solid #d1d5db;
 }
 
 .shelf-summary {
-  padding: 14px 16px;
-  font-size: 1rem;
+  padding: 12px 14px;
+  font-size: 0.98rem;
+  font-weight: 700;
   color: #374151;
-  background: #d7d7d7;
+  background: #eef0f2;
   border-bottom: 1px solid #e5e7eb;
 }
 
 .rack-group-body {
-  padding: 14px;
+  padding: 12px;
   display: grid;
-  gap: 14px;
-  background: #ffffff
+  gap: 10px;
+  background: #ffffff;
 }
 
 .shelf-group-body {
-  padding: 14px;
-  background: #fafafa
-}
-
-.rack-group[open] > .rack-summary {
-  background: #9a9a9a;
-}
-.shelf-group[open] > .shelf-summary {
-  background: #d7d7d7;
+  padding: 12px;
+  background: #fafafa;
 }
