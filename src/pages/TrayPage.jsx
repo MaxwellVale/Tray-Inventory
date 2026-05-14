@@ -607,7 +607,7 @@ export default function TrayPage() {
             </button>
 
             <button
-
+              className="primary-button"
               disabled={isSaving || !authUser}
               onClick={submitChanges}
             >
