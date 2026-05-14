@@ -106,12 +106,6 @@ h1 {
   font-size: 0.92rem;
 }
 
-.tray-summary {
-  color: #374151;
-  font-weight: 700;
-  white-space: nowrap;
-}
-
 .tray-info {
   text-align: left;
 }
@@ -259,10 +253,6 @@ button,
   .sku-main {
     align-items: flex-start;
     flex-direction: column;
-  }
-
-  .tray-summary {
-    white-space: normal;
   }
 
   .meta-grid {
@@ -543,6 +533,11 @@ button:disabled {
 
 .rack-summary,
 .shelf-summary {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  width: 100%;
   list-style: none;
   cursor: pointer;
   font-weight: 700;
@@ -581,4 +576,11 @@ button:disabled {
 .shelf-group-body {
   padding: 12px;
   background: #fafafa;
+}
+
+.group-count {
+  color: #6b7280;
+  font-size: 0.9rem;
+  font-weight: 700;
+  white-space: nowrap;
 }

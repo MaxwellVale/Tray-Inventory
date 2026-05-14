@@ -146,14 +146,42 @@ export default function Dashboard() {
               .sort()
               .map((rackKey) => (
                 <details key={rackKey} className="rack-group" open>
-                  <summary className="rack-summary">Rack {rackKey}</summary>
+                  <summary className="rack-summary">
+                    <span>Rack {rackKey}</span>
+                    <span className="group-count">
+                      {Object.values(groupedTrays[rackKey]).reduce(
+                        (sum, shelfTrays) => sum + shelfTrays.length,
+                        0
+                      )}{" "}
+                      trays · {" "}
+                      {Object.values(groupedTrays[rackKey]).reduce(
+                        (sum, shelfTrays) =>
+                          sum + shelfTrays.reduce(
+                            (traySum, tray) => traySum + Number(tray.totalQuantity || 0),
+                            0
+                          ),
+                        0
+                      )}{" "}
+                      frames
+                    </span>
+                  </summary>
 
                   <div className="rack-group-body">
                     {Object.keys(groupedTrays[rackKey])
                       .sort((a, b) => String(a).localeCompare(String(b)))
                       .map((shelfKey) => (
                         <details key={shelfKey} className="shelf-group">
-                          <summary className="shelf-summary">Shelf {shelfKey}</summary>
+                          <summary className="shelf-summary">
+                            <span>Shelf {shelfKey}</span>
+                            <span className="group-count">
+                              {groupedTrays[rackKey][shelfKey].length} trays ·{" "}
+                              {groupedTrays[rackKey][shelfKey].reduce(
+                                (sum, tray) => sum + Number(tray.totalQuantity || 0),
+                                0
+                              )}{" "}
+                              frames
+                            </span>
+                          </summary>
 
                           <div className="shelf-group-body">
                             <div className="tray-list">
