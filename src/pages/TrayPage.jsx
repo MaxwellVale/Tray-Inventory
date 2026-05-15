@@ -29,6 +29,7 @@ export default function TrayPage() {
   const [moveDestinationTrayId, setMoveDestinationTrayId] = useState("");
   const [moveQuantityInput, setMoveQuantityInput] = useState("1");
   const [isMoving, setIsMoving] = useState(false);
+  const [pendingMoves, setPendingMoves] = useState([]);
 
   const [allFrames, setAllFrames] = useState([]);
   const [showAddFrameModal, setShowAddFrameModal] = useState(false);
@@ -36,6 +37,7 @@ export default function TrayPage() {
   const [newFrameQuantity, setNewFrameQuantity] = useState("1");
   const [newFrameSearch, setNewFrameSearch] = useState("");
   const [isAddingFrame, setIsAddingFrame] = useState(false);
+  const [pendingAdds, setPendingAdds] = useState([]);
 
   async function loadTrayData() {
     try {
@@ -88,9 +90,9 @@ export default function TrayPage() {
     }
   }
 
-  async function handleMoveFrame() {
+  function handleMoveFrame() {
     if (!authUser) {
-      setStatus("You must be signed in to move frames.");
+      setStatus("You must be signed in to stage a move.");
       return;
     }
 
@@ -111,34 +113,46 @@ export default function TrayPage() {
       return;
     }
 
-    try {
-      setIsMoving(true);
-      setStatus("Moving frames...");
+    const sourceItem = contents.find((item) => item.frame_id === moveFrameId);
 
-      await moveFrameBetweenTrays({
+    if (!sourceItem) {
+      setStatus("Selected frame is not in this tray.");
+      return;
+    }
+
+    const alreadyStagedOut = pendingMoves
+      .filter((move) => move.frameId === moveFrameId)
+      .reduce((sum, move) => sum + move.quantity, 0);
+
+    const availableToMove = sourceItem.quantity - alreadyStagedOut;
+
+    if (parsedMoveQuantity > availableToMove) {
+      setStatus("Cannot stage moving more than the available quantity.");
+      return;
+    }
+
+    setPendingMoves((current) => [
+      ...current,
+      {
         sourceTrayId: trayId,
         destinationTrayId: moveDestinationTrayId,
         frameId: moveFrameId,
-        moveQuantity: parsedMoveQuantity,
-        signedBy: authUser.email,
-      });
+        quantity: parsedMoveQuantity,
+      },
+    ]);
 
-      setMoveFrameId("");
-      setMoveDestinationTrayId("");
-      setMoveQuantityInput("1");
-
-      await loadTrayData();
-      setStatus(`Moved ${parsedMoveQuantity} of ${moveFrameId} to ${moveDestinationTrayId}.`);
-    } catch (error) {
-      setStatus(error.message || "Could not move frame.");
-    } finally {
-      setIsMoving(false);
-    }
+    setMoveFrameId("");
+    setMoveDestinationTrayId("");
+    setMoveQuantityInput("1");
+    setIsMoveMode(false);
+    setStatus(
+      `Staged move of ${parsedMoveQuantity} ${moveFrameId} to ${moveDestinationTrayId}.`
+    );
   }
 
-  async function handleAddNewFrame() {
+  function handleAddNewFrame() {
     if (!authUser) {
-      setStatus("You must be signed in to add a frame.");
+      setStatus("You must be signed in to stage a frame addition.");
       return;
     }
 
@@ -154,29 +168,30 @@ export default function TrayPage() {
       return;
     }
 
-    try {
-      setIsAddingFrame(true);
-      setStatus("Adding frame...");
+    const alreadyInTray = contents.some((item) => item.frame_id === newFrameId);
+    const alreadyPendingAdd = pendingAdds.some((item) => item.frameId === newFrameId);
 
-      await addNewFrameToTray({
+    if (alreadyInTray || alreadyPendingAdd) {
+      setStatus(
+        "That frame is already in this tray or already staged to be added."
+      );
+      return;
+    }
+
+    setPendingAdds((current) => [
+      ...current,
+      {
         trayId,
         frameId: newFrameId,
         quantity: parsedQuantity,
-        signedBy: authUser.email,
-      });
+      },
+    ]);
 
-      setNewFrameId("");
-      setNewFrameQuantity("1");
-      setNewFrameSearch("");
-      setShowAddFrameModal(false);
-
-      await loadTrayData();
-      setStatus(`Added ${newFrameId} to ${trayId}.`);
-    } catch (error) {
-      setStatus(error.message || "Could not add frame.");
-    } finally {
-      setIsAddingFrame(false);
-    }
+    setNewFrameId("");
+    setNewFrameQuantity("1");
+    setNewFrameSearch("");
+    setShowAddFrameModal(false);
+    setStatus(`Staged addition of ${newFrameId} to ${trayId}.`);
   }
 
   const stagedChanges = useMemo(() => {
@@ -196,7 +211,7 @@ export default function TrayPage() {
       .filter((change) => change.changeAmount !== 0);
   }, [contents, pendingChanges]);
 
-  function stageChange(item, delta) {
+  async function stageChange(item, delta) {
     setPendingChanges((currentChanges) => {
       const currentPendingChange = currentChanges[item.id] || 0;
       const proposedPendingChange = currentPendingChange + delta;
@@ -229,7 +244,11 @@ export default function TrayPage() {
       return;
     }
 
-    if (stagedChanges.length === 0) {
+    const hasQuantityChanges = stagedChanges.length > 0;
+    const hasMoves = pendingMoves.length > 0;
+    const hasAdds = pendingAdds.length > 0;
+
+    if (!hasQuantityChanges && !hasMoves && !hasAdds) {
       setStatus("No pending changes to submit.");
       return;
     }
@@ -238,34 +257,42 @@ export default function TrayPage() {
       setIsSaving(true);
       setStatus("Submitting changes...");
 
-      const results = await submitInventoryChanges({
-        changes: stagedChanges,
-        signedBy: authUser.email,
-      });
+      if (hasQuantityChanges) {
+        await submitInventoryChanges({
+          changes: stagedChanges,
+          signedBy: authUser.email,
+        });
+      }
 
-      setContents((currentContents) =>
-        currentContents
-          .map((item) => {
-            const submittedItem = results.find(
-              (result) => result.contentId === item.id
-            );
+      if (hasMoves) {
+        for (const move of pendingMoves) {
+          await moveFrameBetweenTrays({
+            sourceTrayId: move.sourceTrayId,
+            destinationTrayId: move.destinationTrayId,
+            frameId: move.frameId,
+            moveQuantity: move.quantity,
+            signedBy: authUser.email,
+          });
+        }
+      }
 
-            if (!submittedItem) return item;
-
-            return {
-              ...item,
-              quantity: submittedItem.quantity,
-            };
-          })
-          .filter((item) => item.quantity > 0)
-      );
+      if (hasAdds) {
+        for (const add of pendingAdds) {
+          await addNewFrameToTray({
+            trayId: add.trayId,
+            frameId: add.frameId,
+            quantity: add.quantity,
+            signedBy: authUser.email,
+          });
+        }
+      }
 
       setPendingChanges({});
+      setPendingMoves([]);
+      setPendingAdds([]);
 
-      const totalChanges = results.length;
-      setStatus(
-        `Submitted ${totalChanges} change${totalChanges === 1 ? "" : "s"}.`
-      );
+      await loadTrayData();
+      setStatus("Submitted all staged changes.");
     } catch (error) {
       setStatus(error.message || "Could not submit changes.");
     } finally {
@@ -273,36 +300,73 @@ export default function TrayPage() {
     }
   }
 
-    function handleChangeAmountInput(event) {
-        setChangeAmountInput(event.target.value);
+  function handleChangeAmountInput(event) {
+      setChangeAmountInput(event.target.value);
+  }
+
+  function commitChangeAmount() {
+      const trimmedValue = changeAmountInput.trim();
+
+      if (trimmedValue === "") {
+          setChangeAmountInput(String(changeAmount));
+          return;
+      }
+
+      const parsedValue = Number(trimmedValue);
+
+      if (!Number.isFinite(parsedValue) || parsedValue < 1) {
+          setChangeAmountInput(String(changeAmount));
+          return;
+      }
+
+      const nextValue = Math.floor(parsedValue);
+      setChangeAmount(nextValue);
+      setChangeAmountInput(String(nextValue));
+  }
+
+  function handleChangeAmountKeyDown(event) {
+      if (event.key === "Enter") {
+          event.preventDefault();
+          commitChangeAmount();
+      }
+  }
+
+  async function resetTrayView() {
+    const hasPending =
+      Object.keys(pendingChanges).length > 0 ||
+      pendingMoves.length > 0 ||
+      pendingAdds.length > 0;
+
+    if (hasPending) {
+      const confirmed = window.confirm(
+        "Discard all staged changes and reload the tray?"
+      );
+
+      if (!confirmed) return;
     }
 
-    function commitChangeAmount() {
-        const trimmedValue = changeAmountInput.trim();
+    setPendingChanges({});
+    setPendingMoves([]);
+    setPendingAdds([]);
+    setMoveFrameId("");
+    setMoveDestinationTrayId("");
+    setMoveQuantityInput("1");
+    setIsMoveMode(false);
+    setNewFrameId("");
+    setNewFrameQuantity("1");
+    setNewFrameSearch("");
+    setShowAddFrameModal(false);
+    console.log("Reset Tray View start");
+    setStatus("Resetting tray...");
+    console.log("First setStatus called");
 
-        if (trimmedValue === "") {
-            setChangeAmountInput(String(changeAmount));
-            return;
-        }
-
-        const parsedValue = Number(trimmedValue);
-
-        if (!Number.isFinite(parsedValue) || parsedValue < 1) {
-            setChangeAmountInput(String(changeAmount));
-            return;
-        }
-
-        const nextValue = Math.floor(parsedValue);
-        setChangeAmount(nextValue);
-        setChangeAmountInput(String(nextValue));
+    try {
+      await loadTrayData();
     }
-
-    function handleChangeAmountKeyDown(event) {
-        if (event.key === "Enter") {
-            event.preventDefault();
-            commitChangeAmount();
-        }
+    catch (error) {
+      setStatus(error.message || "Could not reset tray.");
     }
+  }
 
   if (!tray) {
     return (
@@ -578,7 +642,7 @@ export default function TrayPage() {
         <div className="submit-review-card">
           <h2>Pending Submission</h2>
 
-          {stagedChanges.length === 0 ? (
+          {stagedChanges.length === 0 && pendingMoves.length === 0 && pendingAdds.length === 0 ? (
             <p>No pending changes.</p>
           ) : (
             <ul>
@@ -586,12 +650,24 @@ export default function TrayPage() {
                 const sign = change.changeAmount > 0 ? "+" : "";
 
                 return (
-                  <li key={change.contentId}>
-                    {change.frameId}: {sign}
+                  <li key={`change-${change.contentId}`}>
+                    Modify {change.frameId}: {sign}
                     {change.changeAmount} → {change.nextQuantity}
                   </li>
                 );
               })}
+
+              {pendingMoves.map((move, index) => (
+                <li key={`move-${index}`}>
+                  Move {move.frameId}: -{move.quantity} from {move.sourceTrayId} to {move.destinationTrayId}
+                </li>
+              ))}
+
+              {pendingAdds.map((add, index) => (
+                <li key={`add-${index}`}>
+                  Add new {add.frameId}: +{add.quantity} to {add.trayId}
+                </li>
+              ))}
             </ul>
           )}
 
@@ -601,9 +677,9 @@ export default function TrayPage() {
             <button
               className="secondary-button"
               disabled={isSaving}
-              onClick={clearPendingChanges}
+              onClick={resetTrayView}
             >
-              Clear
+              Reset
             </button>
 
             <button
@@ -615,9 +691,9 @@ export default function TrayPage() {
             </button>
           </div>
 
-          <button className="secondary-button" onClick={loadTrayData}>
+          {/* <button className="secondary-button" onClick={loadTrayData}>
             Refresh
-          </button>
+          </button> */}
         </div>
 
       </section>
