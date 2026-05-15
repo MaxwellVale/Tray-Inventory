@@ -5,6 +5,7 @@ import LoginPage from "./pages/LoginPage";
 import { useAuth } from "./lib/AuthContext";
 import { signOutUser } from "./lib/auth";
 import "./App.css";
+import { Analytics } from "@vercel/analytics/react"
 
 export default function App() {
   const { authUser, authLoading } = useAuth();
@@ -46,6 +47,7 @@ export default function App() {
           <Route path="/tray/:trayId" element={<TrayPage />} />
           <Route path="/login" element={<LoginPage />} />
         </Routes>
+        <Analytics />
       </div>
     </BrowserRouter>
   );
