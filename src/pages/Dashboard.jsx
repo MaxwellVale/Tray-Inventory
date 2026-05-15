@@ -144,80 +144,90 @@ export default function Dashboard() {
           <div className="rack-groups">
             {Object.keys(groupedTrays)
               .sort()
-              .map((rackKey) => (
-                <details key={rackKey} className="rack-group" open>
-                  <summary className="rack-summary">
-                    <span>Rack {rackKey}</span>
-                    <span className="group-count">
-                      {Object.values(groupedTrays[rackKey]).reduce(
-                        (sum, shelfTrays) => sum + shelfTrays.length,
-                        0
-                      )}{" "}
-                      trays · {" "}
-                      {Object.values(groupedTrays[rackKey]).reduce(
-                        (sum, shelfTrays) =>
-                          sum + shelfTrays.reduce(
-                            (traySum, tray) => traySum + Number(tray.totalQuantity || 0),
+              .map((rackKey) => {
+                const rackTrayCount = Object.values(groupedTrays[rackKey]).reduce(
+                  (sum, shelfTrays) => sum + shelfTrays.length,
+                  0
+                );
+
+                const rackFrameCount = Object.values(groupedTrays[rackKey]).reduce(
+                  (sum, shelfTrays) =>
+                    sum +
+                    shelfTrays.reduce(
+                      (traySum, tray) => traySum + Number(tray.totalQuantity || 0),
+                      0
+                    ),
+                  0
+                );
+
+                return (
+                  <details key={rackKey} className="rack-group" open>
+                    <summary className="rack-summary">
+                      <span>Rack {rackKey}</span>
+                      <span className="group-count">
+                        {rackTrayCount} tray{rackTrayCount === 1 ? "" : "s"} · {" "}
+                        {rackFrameCount} frame{rackFrameCount === 1 ? "" : "s"}
+                      </span>
+                    </summary>
+
+                    <div className="rack-group-body">
+                      {Object.keys(groupedTrays[rackKey])
+                        .sort((a, b) => String(a).localeCompare(String(b)))
+                        .map((shelfKey) => {
+                          const shelfTrayCount = groupedTrays[rackKey][shelfKey].length;
+
+                          const shelfFrameCount = groupedTrays[rackKey][shelfKey].reduce(
+                            (sum, tray) => sum + Number(tray.totalQuantity || 0),
                             0
-                          ),
-                        0
-                      )}{" "}
-                      frames
-                    </span>
-                  </summary>
+                          );
 
-                  <div className="rack-group-body">
-                    {Object.keys(groupedTrays[rackKey])
-                      .sort((a, b) => String(a).localeCompare(String(b)))
-                      .map((shelfKey) => (
-                        <details key={shelfKey} className="shelf-group">
-                          <summary className="shelf-summary">
-                            <span>Shelf {shelfKey}</span>
-                            <span className="group-count">
-                              {groupedTrays[rackKey][shelfKey].length} trays ·{" "}
-                              {groupedTrays[rackKey][shelfKey].reduce(
-                                (sum, tray) => sum + Number(tray.totalQuantity || 0),
-                                0
-                              )}{" "}
-                              frames
-                            </span>
-                          </summary>
+                          return (
+                            <details key={shelfKey} className="shelf-group">
+                              <summary className="shelf-summary">
+                                <span>Shelf {shelfKey}</span>
+                                <span className="group-count">
+                                  {shelfTrayCount} tray{shelfTrayCount === 1 ? "" : "s"} ·{" "}
+                                  {shelfFrameCount} frame{shelfFrameCount === 1 ? "" : "s"}
+                                </span>
+                              </summary>
 
-                          <div className="shelf-group-body">
-                            <div className="tray-list">
-                              {groupedTrays[rackKey][shelfKey].map((tray) => (
-                                <Link
-                                  key={tray.tray_id}
-                                  className="tray-link"
-                                  to={`/tray/${tray.tray_id}`}
-                                >
-                                  <div className="tray-info">
-                                    <strong>{highlightMatch(tray.tray_id, searchTerm)}</strong>
-                                    <span>
-                                      {highlightMatch(
-                                        tray.tray_name || "Unnamed tray",
-                                        searchTerm
-                                      )}
-                                    </span>
-                                    <span>
-                                      Rack {highlightMatch(tray.rack || "—", searchTerm)} / Shelf{" "}
-                                      {highlightMatch(String(tray.shelf ?? "—"), searchTerm)}
-                                    </span>
-                                  </div>
+                              <div className="shelf-group-body">
+                                <div className="tray-list">
+                                  {groupedTrays[rackKey][shelfKey].map((tray) => (
+                                    <Link
+                                      key={tray.tray_id}
+                                      className="tray-link"
+                                      to={`/tray/${tray.tray_id}`}
+                                    >
+                                      <div className="tray-info">
+                                        <strong>{highlightMatch(tray.tray_id, searchTerm)}</strong>
+                                        <span>
+                                          {highlightMatch(
+                                            tray.tray_name || "Unnamed tray",
+                                            searchTerm
+                                          )}
+                                        </span>
+                                        <span>
+                                          Rack {highlightMatch(tray.rack || "—", searchTerm)} / Shelf{" "}
+                                          {highlightMatch(String(tray.shelf ?? "—"), searchTerm)}
+                                        </span>
+                                      </div>
 
-                                  <div className="tray-summary">
-                                    {tray.frameCount} frame
-                                    {tray.frameCount === 1 ? "" : "s"} · {tray.totalQuantity} total
-                                  </div>
-                                </Link>
-                              ))}
-                            </div>
-                          </div>
-                        </details>
-                      ))}
-                  </div>
-                </details>
-              ))}
+                                      <div className="tray-summary">
+                                        {tray.frameCount} frame
+                                        {tray.frameCount === 1 ? "" : "s"} · {tray.totalQuantity} total
+                                      </div>
+                                    </Link>
+                                  ))}
+                                </div>
+                              </div>
+                            </details>
+                          );
+                        })}
+                    </div>
+                  </details>
+                );
+              })}
           </div>
         ) : (
           <div className="search-results">
