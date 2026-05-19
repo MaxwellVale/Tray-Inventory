@@ -18,6 +18,8 @@ function highlightMatch(text, searchTerm) {
   );
 }
 
+const rackOrder = ["AA", "Z2", "Z1", "Y", "X", "W", "V", "U", "T", "S", "Test"];
+
 export default function Dashboard() {
   const [trays, setTrays] = useState([]);
   const [searchTerm, setSearchTerm] = useState("");
@@ -113,6 +115,36 @@ export default function Dashboard() {
     return grouped;
   }, [filteredTrays]);
 
+  const rackNavigatorData = useMemo(() => {
+    return rackOrder
+      .filter((rackKey) => groupedTrays[rackKey])
+      .map((rackKey) => {
+        const shelves = groupedTrays[rackKey];
+        const shelfKeys = Object.keys(shelves);
+
+        const trayCount = shelfKeys.reduce(
+          (sum, shelfKey) => sum + shelves[shelfKey].length,
+          0
+        );
+
+        const frameCount = shelfKeys.reduce(
+          (sum, shelfKey) =>
+            sum +
+            shelves[shelfKey].reduce(
+              (traySum, tray) => traySum + Number(tray.totalQuantity || 0),
+              0
+            ),
+          0
+        );
+
+        return {
+          rackKey,
+          trayCount,
+          frameCount,
+        };
+      });
+  }, [groupedTrays]);
+
   const isSearchMode = searchTerm.trim() !== "";
 
   return (
@@ -141,94 +173,143 @@ export default function Dashboard() {
         <p className="status">{status}</p>
 
         {!isSearchMode ? (
-          <div className="rack-groups">
-            {Object.keys(groupedTrays)
-              .sort()
-              .map((rackKey) => {
-                const rackTrayCount = Object.values(groupedTrays[rackKey]).reduce(
-                  (sum, shelfTrays) => sum + shelfTrays.length,
-                  0
-                );
+          <>
+            <div className="rack-navigator">
+              <p className="eyebrow">Rack Navigator</p>
 
-                const rackFrameCount = Object.values(groupedTrays[rackKey]).reduce(
-                  (sum, shelfTrays) =>
-                    sum +
-                    shelfTrays.reduce(
-                      (traySum, tray) => traySum + Number(tray.totalQuantity || 0),
-                      0
-                    ),
-                  0
-                );
-
-                return (
-                  <details key={rackKey} className="rack-group">
-                    <summary className="rack-summary">
-                      <span>Rack {rackKey}</span>
-                      <span className="group-count">
-                        {rackTrayCount} tray{rackTrayCount === 1 ? "" : "s"} · {" "}
-                        {rackFrameCount} frame{rackFrameCount === 1 ? "" : "s"}
+              <div className="rack-navigator-layout">
+                <div className="rack-navigator-vertical">
+                  {rackNavigatorData.slice(0, 8).map((rack) => (
+                    <button
+                      key={rack.rackKey}
+                      className="rack-nav-tile"
+                      onClick={() => {
+                        const target = document.getElementById(`rack-${rack.rackKey}`);
+                        if (target) {
+                          target.scrollIntoView({ behavior: "smooth", block: "start" });
+                        }
+                      }}
+                    >
+                      <span className="rack-nav-name">{rack.rackKey}</span>
+                      <span className="rack-nav-meta">
+                        {rack.trayCount} tray{rack.trayCount === 1 ? "" : "s"} ·{" "}
+                        {rack.frameCount} frame{rack.frameCount === 1 ? "" : "s"}
                       </span>
-                    </summary>
+                    </button>
+                  ))}
+                </div>
 
-                    <div className="rack-group-body">
-                      {Object.keys(groupedTrays[rackKey])
-                        .sort((a, b) => String(a).localeCompare(String(b)))
-                        .map((shelfKey) => {
-                          const shelfTrayCount = groupedTrays[rackKey][shelfKey].length;
+                <div className="rack-navigator-horizontal">
+                  {rackNavigatorData.slice(8).map((rack) => (
+                    <button
+                      key={rack.rackKey}
+                      className="rack-nav-tile"
+                      onClick={() => {
+                        const target = document.getElementById(`rack-${rack.rackKey}`);
+                        if (target) {
+                          target.scrollIntoView({ behavior: "smooth", block: "start" });
+                        }
+                      }}
+                    >
+                      <span className="rack-nav-name">{rack.rackKey}</span>
+                      <span className="rack-nav-meta">
+                        {rack.trayCount} tray{rack.trayCount === 1 ? "" : "s"} ·{" "}
+                        {rack.frameCount} frame{rack.frameCount === 1 ? "" : "s"}
+                      </span>
+                    </button>
+                  ))}
+                </div>
+              </div>
+            </div>
+            <div className="rack-groups">
+              {rackOrder
+                .filter((rackKey) => groupedTrays[rackKey])
+                .map((rackKey) => {
+                  const rackTrayCount = Object.values(groupedTrays[rackKey]).reduce(
+                    (sum, shelfTrays) => sum + shelfTrays.length,
+                    0
+                  );
 
-                          const shelfFrameCount = groupedTrays[rackKey][shelfKey].reduce(
-                            (sum, tray) => sum + Number(tray.totalQuantity || 0),
-                            0
-                          );
+                  const rackFrameCount = Object.values(groupedTrays[rackKey]).reduce(
+                    (sum, shelfTrays) =>
+                      sum +
+                      shelfTrays.reduce(
+                        (traySum, tray) => traySum + Number(tray.totalQuantity || 0),
+                        0
+                      ),
+                    0
+                  );
 
-                          return (
-                            <details key={shelfKey} className="shelf-group">
-                              <summary className="shelf-summary">
-                                <span>Shelf {shelfKey}</span>
-                                <span className="group-count">
-                                  {shelfTrayCount} tray{shelfTrayCount === 1 ? "" : "s"} ·{" "}
-                                  {shelfFrameCount} frame{shelfFrameCount === 1 ? "" : "s"}
-                                </span>
-                              </summary>
+                  return (
+                    <details key={rackKey} id={`rack-${rackKey}`} className="rack-group">
+                      <summary className="rack-summary">
+                        <span>Rack {rackKey}</span>
+                        <span className="group-count">
+                          {rackTrayCount} tray{rackTrayCount === 1 ? "" : "s"} · {" "}
+                          {rackFrameCount} frame{rackFrameCount === 1 ? "" : "s"}
+                        </span>
+                      </summary>
 
-                              <div className="shelf-group-body">
-                                <div className="tray-list">
-                                  {groupedTrays[rackKey][shelfKey].map((tray) => (
-                                    <Link
-                                      key={tray.tray_id}
-                                      className="tray-link"
-                                      to={`/tray/${tray.tray_id}`}
-                                    >
-                                      <div className="tray-info">
-                                        <strong>{highlightMatch(tray.tray_id, searchTerm)}</strong>
-                                        <span>
-                                          {highlightMatch(
-                                            tray.tray_name || "Unnamed tray",
-                                            searchTerm
-                                          )}
-                                        </span>
-                                        <span>
-                                          Rack {highlightMatch(tray.rack || "—", searchTerm)} / Shelf{" "}
-                                          {highlightMatch(String(tray.shelf ?? "—"), searchTerm)}
-                                        </span>
-                                      </div>
+                      <div className="rack-group-body">
+                        {Object.keys(groupedTrays[rackKey])
+                          .sort((a, b) => String(a).localeCompare(String(b)))
+                          .map((shelfKey) => {
+                            const shelfTrayCount = groupedTrays[rackKey][shelfKey].length;
 
-                                      <div className="tray-summary">
-                                        {tray.frameCount} frame
-                                        {tray.frameCount === 1 ? "" : "s"} · {tray.totalQuantity} total
-                                      </div>
-                                    </Link>
-                                  ))}
+                            const shelfFrameCount = groupedTrays[rackKey][shelfKey].reduce(
+                              (sum, tray) => sum + Number(tray.totalQuantity || 0),
+                              0
+                            );
+
+                            return (
+                              <details key={shelfKey} className="shelf-group">
+                                <summary className="shelf-summary">
+                                  <span>Shelf {shelfKey}</span>
+                                  <span className="group-count">
+                                    {shelfTrayCount} tray{shelfTrayCount === 1 ? "" : "s"} ·{" "}
+                                    {shelfFrameCount} frame{shelfFrameCount === 1 ? "" : "s"}
+                                  </span>
+                                </summary>
+
+                                <div className="shelf-group-body">
+                                  <div className="tray-list">
+                                    {groupedTrays[rackKey][shelfKey].map((tray) => (
+                                      <Link
+                                        key={tray.tray_id}
+                                        className="tray-link"
+                                        to={`/tray/${tray.tray_id}`}
+                                      >
+                                        <div className="tray-info">
+                                          <strong>{highlightMatch(tray.tray_id, searchTerm)}</strong>
+                                          <span>
+                                            {highlightMatch(
+                                              tray.tray_name || "Unnamed tray",
+                                              searchTerm
+                                            )}
+                                          </span>
+                                          <span>
+                                            Rack {highlightMatch(tray.rack || "—", searchTerm)} / Shelf{" "}
+                                            {highlightMatch(String(tray.shelf ?? "—"), searchTerm)}
+                                          </span>
+                                        </div>
+
+                                        <div className="tray-summary">
+                                          {tray.frameCount} frame
+                                          {tray.frameCount === 1 ? "" : "s"} · {tray.totalQuantity} total
+                                        </div>
+                                      </Link>
+                                    ))}
+                                  </div>
                                 </div>
-                              </div>
-                            </details>
-                          );
-                        })}
-                    </div>
-                  </details>
-                );
-              })}
-          </div>
+                              </details>
+                            );
+                          })}
+                      </div>
+                    </details>
+                  );
+                })}
+            </div>
+          </>
         ) : (
           <div className="search-results">
             <section className="card frame-search-card">
