@@ -115,6 +115,37 @@ export default function Dashboard() {
     return grouped;
   }, [filteredTrays]);
 
+  const groupedFrameResults = useMemo(() => {
+    const grouped = {};
+
+    for (const result of frameResults) {
+      const key = result.frame_id;
+
+      if (!grouped[key]) {
+        grouped[key] = {
+          frame_id: result.frame_id,
+          frame_ids: result.frame_ids,
+          totalQuantity: 0,
+          trayLocations: [],
+        };
+      }
+
+      grouped[key].totalQuantity += Number(result.quantity || 0);
+
+      grouped[key].trayLocations.push({
+        tray_id: result.trays?.tray_id,
+        tray_name: result.trays?.tray_name,
+        rack: result.trays?.rack,
+        shelf: result.trays?.shelf,
+        quantity: result.quantity,
+      });
+    }
+
+    return Object.values(grouped).sort((a, b) =>
+      a.frame_id.localeCompare(b.frame_id)
+    );
+  }, [frameResults]);
+
   const rackNavigatorData = useMemo(() => {
     return rackOrder
       .filter((rackKey) => groupedTrays[rackKey])
@@ -353,10 +384,14 @@ export default function Dashboard() {
               </p>
 
               <div className="frame-results">
-                {frameResults.map((result) => (
-                  <article key={result.id} className="frame-result-card">
+                {groupedFrameResults.map((result) => (
+                  <article key={result.frame_id} className="frame-result-card">
                     <div>
                       <p className="sku">{highlightMatch(result.frame_id, searchTerm)}</p>
+                      <p className="sku-detail">
+                        Model {highlightMatch(result.frame_ids?.model || "—", searchTerm)} ·{" "}
+                        {highlightMatch(result.frame_ids?.color || "—", searchTerm)}
+                      </p>
                       <p className="sku-detail">
                         SKU: {highlightMatch(result.frame_ids?.sku || "—", searchTerm)}
                       </p>
@@ -364,23 +399,30 @@ export default function Dashboard() {
 
                     <div className="frame-location-meta">
                       <div className="quantity-pill">
-                        Qty <strong>{result.quantity}</strong>
+                        Total <strong>{result.totalQuantity}</strong>
                       </div>
 
-                      <Link
-                        className="button-link"
-                        to={`/tray/${result.trays?.tray_id}`}
-                      >
-                        {result.trays?.tray_id}
-                      </Link>
+                      <div className="tray-location-buttons">
+                        {result.trayLocations.map((location, index) => (
+                          <Link
+                            key={`${location.tray_id}-${index}`}
+                            className="button-link tray-location-button"
+                            to={`/tray/${location.tray_id}`}
+                          >
+                            {highlightMatch(location.tray_id, searchTerm)} · Qty {location.quantity}
+                          </Link>
+                        ))}
+                      </div>
 
-                      <p className="sku-detail">
-                        {result.trays?.tray_name || "Unnamed tray"}
-                      </p>
-                      <p className="sku-detail">
-                        Rack {result.trays?.rack || "—"} / Shelf{" "}
-                        {result.trays?.shelf ?? "—"}
-                      </p>
+                      <div className="tray-location-list">
+                        {result.trayLocations.map((location, index) => (
+                          <p key={`${location.tray_id}-meta-${index}`} className="sku-detail">
+                            {highlightMatch(location.tray_name || "Unnamed tray", searchTerm)} — Rack{" "}
+                            {highlightMatch(location.rack || "—", searchTerm)} / Shelf{" "}
+                            {highlightMatch(String(location.shelf ?? "—"), searchTerm)}
+                          </p>
+                        ))}
+                      </div>
                     </div>
                   </article>
                 ))}

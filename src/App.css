@@ -596,6 +596,31 @@ button:disabled {
   white-space: nowrap;
 }
 
+.tray-location-buttons {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  justify-content: flex-end;
+}
+
+.tray-location-button {
+  width: auto;
+  min-height: 40px;
+  padding: 10px 12px;
+}
+
+.tray-location-list {
+  display: grid;
+  gap: 4px;
+  margin-top: 8px;
+}
+
+@media (max-width: 640px) {
+  .tray-location-buttons {
+    justify-content: flex-start;
+  }
+}
+
 .rack-navigator {
   margin-top: 24px;
   margin-bottom: 28px;
