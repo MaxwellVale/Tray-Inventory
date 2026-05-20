@@ -619,21 +619,23 @@ export default function TrayPage() {
                   </div>
                 </div>
 
-                <div className="button-row">
-                  <button
-                    disabled={isSaving}
-                    onClick={() => stageChange(item, -changeAmount)}
-                  >
-                    Remove {changeAmount}
-                  </button>
+                {!isMoveMode && (
+                  <div className="button-row">
+                    <button
+                      disabled={isSaving}
+                      onClick={() => stageChange(item, -changeAmount)}
+                    >
+                      Remove {changeAmount}
+                    </button>
 
-                  <button
-                    disabled={isSaving}
-                    onClick={() => stageChange(item, changeAmount)}
-                  >
-                    Add {changeAmount}
-                  </button>
-                </div>
+                    <button
+                      disabled={isSaving}
+                      onClick={() => stageChange(item, changeAmount)}
+                    >
+                      Add {changeAmount}
+                    </button>
+                  </div>
+                )}
               </article>
             );
           })}
