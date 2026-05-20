@@ -27,6 +27,7 @@ export default function Dashboard() {
   const [status, setStatus] = useState("Loading trays...");
   const [frameStatus, setFrameStatus] = useState("Enter a frame search.");
   const [isSearchingFrames, setIsSearchingFrames] = useState(false);
+  const [selectedRack, setSelectedRack] = useState("AA");
 
   async function loadDashboard() {
     try {
@@ -213,13 +214,10 @@ export default function Dashboard() {
                   {rackNavigatorData.slice(0, 8).map((rack) => (
                     <button
                       key={rack.rackKey}
-                      className="rack-nav-tile"
-                      onClick={() => {
-                        const target = document.getElementById(`rack-${rack.rackKey}`);
-                        if (target) {
-                          target.scrollIntoView({ behavior: "smooth", block: "start" });
-                        }
-                      }}
+                      className={`rack-nav-tile ${
+                        selectedRack === rack.rackKey ? "rack-nav-tile-active" : ""
+                      }`}
+                      onClick={() => setSelectedRack(rack.rackKey)}
                     >
                       <span className="rack-nav-name">{rack.rackKey}</span>
                       <span className="rack-nav-meta">
@@ -235,12 +233,7 @@ export default function Dashboard() {
                     <button
                       key={rack.rackKey}
                       className="rack-nav-tile"
-                      onClick={() => {
-                        const target = document.getElementById(`rack-${rack.rackKey}`);
-                        if (target) {
-                          target.scrollIntoView({ behavior: "smooth", block: "start" });
-                        }
-                      }}
+                      onClick={() => setSelectedRack(rack.rackKey)}
                     >
                       <span className="rack-nav-name">{rack.rackKey}</span>
                       <span className="rack-nav-meta">
@@ -254,7 +247,7 @@ export default function Dashboard() {
             </div>
             <div className="rack-groups">
               {rackOrder
-                .filter((rackKey) => groupedTrays[rackKey])
+                .filter((rackKey) => rackKey === selectedRack && groupedTrays[rackKey])
                 .map((rackKey) => {
                   const rackTrayCount = Object.values(groupedTrays[rackKey]).reduce(
                     (sum, shelfTrays) => sum + shelfTrays.length,
