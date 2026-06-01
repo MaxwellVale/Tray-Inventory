@@ -1,10 +1,12 @@
-import { useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useState, useEffect } from "react";
+import { useNavigate, useLocation } from "react-router-dom";
 import { signInWithEmail } from "../lib/auth";
 import { useAuth } from "../lib/AuthContext";
 
 export default function LoginPage() {
   const navigate = useNavigate();
+  const location = useLocation();
+  const from = location.state?.from?.pathname || "/";
   const { authUser, authLoading } = useAuth();
 
   const [email, setEmail] = useState("");
@@ -12,9 +14,11 @@ export default function LoginPage() {
   const [status, setStatus] = useState("Enter your staff login.");
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  if (!authLoading && authUser) {
-    navigate("/");
-  }
+  useEffect(() => {
+    if (!authLoading && authUser) {
+      navigate(from, { replace: true });
+    }
+  }, [authLoading, authUser, from, navigate]);
 
   async function handleSubmit(event) {
     event.preventDefault();
@@ -24,7 +28,7 @@ export default function LoginPage() {
       setStatus("Signing in...");
       await signInWithEmail(email, password);
       setStatus("Signed in.");
-      navigate("/");
+      // navigate(from, { replace: true });
     } catch (error) {
       setStatus(error.message || "Could not sign in.");
     } finally {

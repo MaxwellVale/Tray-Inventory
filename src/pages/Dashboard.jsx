@@ -323,8 +323,13 @@ export default function Dashboard() {
                                           </div>
 
                                           <div className="tray-summary">
-                                            {tray.frameCount} frame
-                                            {tray.frameCount === 1 ? "" : "s"} · {tray.totalQuantity} total
+                                            <span>
+                                              {tray.frameCount} frame
+                                              {tray.frameCount === 1 ? "" : "s"}
+                                            </span>
+                                            <span>
+                                              {tray.totalQuantity} total
+                                            </span>
                                           </div>
                                         </Link>
                                       ))}
