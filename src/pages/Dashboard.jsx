@@ -179,6 +179,8 @@ export default function Dashboard() {
 
   const isSearchMode = searchTerm.trim() !== "";
 
+  // console.log("dashboard trays length", trays.length);
+
   return (
     <main className="page">
       <section className="card">

@@ -96,28 +96,41 @@ export async function submitInventoryChanges({ changes, signedBy }) {
 }
 
 export async function getDashboardTrays() {
-  const { data, error } = await supabase
-    .from("trays")
-    .select(
-      `
-      tray_id,
-      tray_name,
-      rack,
-      shelf,
-      notes,
-      tray_contents (
-        id,
+  const pageSize = 1000;
+  let from = 0;
+  let allRows = [];
+
+  while (true) {
+    const { data, error } = await supabase
+      .from("trays")
+      .select(
+        `
         tray_id,
-        frame_id,
-        quantity
+        tray_name,
+        rack,
+        shelf,
+        notes,
+        tray_contents (
+          id,
+          tray_id,
+          frame_id,
+          quantity
+        )
+      `
       )
-    `
-    )
-    .order("tray_id", { ascending: true });
+      .order("tray_id", { ascending: true })
+      .range(from, from + pageSize - 1);
 
-  if (error) throw error;
+    if (error) throw error;
 
-  return data.map((tray) => {
+    const rows = data || [];
+    allRows = allRows.concat(rows);
+
+    if (rows.length < pageSize) break;
+    from += pageSize;
+  }
+
+  return allRows.map((tray) => {
     const contents = tray.tray_contents || [];
 
     const totalQuantity = contents.reduce(
